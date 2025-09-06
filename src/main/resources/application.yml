@@ -48,8 +48,10 @@ cors:
 # Common API Documentation configuration
 springdoc:
   api-docs:
-    enabled: true
+    path: /api-docs
   swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
     enabled: true
   
 
@@ -62,6 +64,7 @@ logging:
 
 # Common JWT configuration
 jwt:
+  secret: local-dev-secret-key
   expiration: 86400 # 24 hours in seconds
 
 
@@ -78,4 +81,3 @@ openapi:
   servers:
     - url: http://localhost:8080/api
       description: Development Server
-

@@ -1,0 +1,81 @@
+# Base configuration for StudentHub Spring Boot Application
+# Environment-specific configurations are loaded based on the active profile
+# Available profiles: local, dev, test, prod
+
+spring:
+  profiles:
+    active: local  # Default profile, can be overridden with SPRING_PROFILES_ACTIVE environment variable
+  application:
+    name: jasper_spring_boot
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    default-property-inclusion: NON_NULL
+
+# Common server configuration
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+# Common CORS configuration
+cors:
+  enabled: true
+  allowed-methods:
+    - GET
+    - POST
+    - PUT
+    - DELETE
+    - PATCH
+    - OPTIONS
+    - HEAD
+  allowed-headers:
+    - Origin
+    - Content-Type
+    - Accept
+    - Authorization
+    - Access-Control-Request-Method
+    - Access-Control-Request-Headers
+    - X-Requested-With
+    - Cache-Control
+  exposed-headers:
+    - Access-Control-Allow-Origin
+    - Access-Control-Allow-Credentials
+    - Authorization
+    - Content-Type
+  allow-credentials: true
+  max-age: 3600
+
+# Common API Documentation configuration
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+  
+
+# Common logging configuration
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%traceId] [%spanId] [%thread] %-5level %logger{36} - %msg%n"
+  level:
+    org.springframework.web: DEBUG
+
+# Common JWT configuration
+jwt:
+  expiration: 86400 # 24 hours in seconds
+
+
+# Environment-specific configurations will be loaded from:
+# - application-local.yml (for local development)
+# - application-dev.yml (for development environment)
+# - application-test.yml (for test environment)
+# - application-prod.yml (for production environment) 
+
+##### Application Constants #####
+
+
+openapi:
+  servers:
+    - url: http://localhost:8080/api
+      description: Development Server
+

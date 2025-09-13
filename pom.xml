@@ -142,6 +142,30 @@
             <artifactId>commons-io</artifactId>
             <version>2.11.0</version>
         </dependency>
+        
+        <dependency>
+	        <groupId>net.sf.jasperreports</groupId>
+	        <artifactId>jasperreports</artifactId>
+	        <version>6.21.3</version>
+	    </dependency>
+	
+	    <!-- iText for PDF -->
+	    <dependency>
+	        <groupId>com.lowagie</groupId>
+	        <artifactId>itext</artifactId>
+	        <version>2.1.7</version>
+	    </dependency>
+	
+	    <!-- Oracle JDBC driver (make sure version matches your Oracle) -->
+	    <dependency>
+		    <groupId>org.springframework.boot</groupId>
+		    <artifactId>spring-boot-starter-jdbc</artifactId>
+		</dependency>
+	    <dependency>
+	        <groupId>com.oracle.database.jdbc</groupId>
+	        <artifactId>ojdbc8</artifactId>
+	        <version>19.22.0.0</version>
+	    </dependency>
     </dependencies>
 	    
 	<build>

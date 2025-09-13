@@ -95,7 +95,8 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/health/**",
                                 "/auth/**",
-                                "/api-docs/**")
+                                "/api-docs/**",
+                                "/report/**")
                         .permitAll()
                         // All other endpoints require authentication
                         .anyRequest().authenticated())

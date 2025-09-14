@@ -1,0 +1,109 @@
+// Run your SQL query
+Connection conn = dataSource.getConnection();
+Statement stmt = conn.createStatement();
+ResultSet rs = stmt.executeQuery("SELECT * FROM EMPLOYEE");
+
+// Wrap in Jasper's datasource
+JRResultSetDataSource jrDataSource = new JRResultSetDataSource(rs);
+
+// Load report template (empty JRXML with no fields defined)
+JasperReport jasperReport = JasperCompileManager.compileReport(
+        getClass().getResourceAsStream("/reports/blank_template.jrxml"));
+
+// Dynamically fill
+JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, new HashMap<>(), jrDataSource);
+
+
+
+FastReportBuilder drb = new FastReportBuilder();
+drb.addColumn("First Name", "EMP_FNAME", String.class.getName(), 30)
+   .addColumn("Last Name", "EMP_LNAME", String.class.getName(), 30)
+   .addColumn("Department", "DEPARTMENT", String.class.getName(), 50)
+   .setTitle("Employee Report")
+   .setUseFullPageWidth(true);
+
+DynamicReport dr = drb.build();
+JRDataSource ds = new JRBeanCollectionDataSource(employeeService.getEmployees());
+
+JasperPrint jp = DynamicJasperHelper.generateJasperPrint(dr, new ClassicLayoutManager(), ds);
+
+
+===================================================================================================================================================
+
+package com.example.report.controller;
+
+import ar.com.fdvs.dj.core.DynamicJasperHelper;
+import ar.com.fdvs.dj.core.layout.ClassicLayoutManager;
+import ar.com.fdvs.dj.domain.DynamicReport;
+import ar.com.fdvs.dj.domain.builders.FastReportBuilder;
+import net.sf.jasperreports.engine.JRDataSource;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
+import net.sf.jasperreports.engine.export.JRXlsExporter;
+import net.sf.jasperreports.export.SimpleExporterInput;
+import net.sf.jasperreports.export.SimpleOutputStreamExporterOutput;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import javax.servlet.http.HttpServletResponse;
+import java.util.List;
+import java.util.Map;
+
+@RestController
+public class ReportController {
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @GetMapping("/report/employees")
+    public void generateReport(HttpServletResponse response) throws Exception {
+        // Query employees
+        String sql = "SELECT EMP_ID, EMP_FNAME, EMP_LNAME, DEPARTMENT, DESIGNATION, CTC FROM EMPLOYEE";
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
+
+        // Build Dynamic Jasper report
+        FastReportBuilder drb = new FastReportBuilder();
+        drb.addColumn("Employee ID", "EMP_ID", Long.class.getName(), 30)
+           .addColumn("First Name", "EMP_FNAME", String.class.getName(), 30)
+           .addColumn("Last Name", "EMP_LNAME", String.class.getName(), 30)
+           .addColumn("Department", "DEPARTMENT", String.class.getName(), 50)
+           .addColumn("Designation", "DESIGNATION", String.class.getName(), 50)
+           .addColumn("CTC", "CTC", Double.class.getName(), 30)
+           .setTitle("Employee Report")
+           .setUseFullPageWidth(true);
+
+        DynamicReport dr = drb.build();
+
+        // Convert query result to JRDataSource
+        JRDataSource ds = new JRBeanCollectionDataSource(rows);
+
+        // Generate JasperPrint
+        JasperPrint jp = DynamicJasperHelper.generateJasperPrint(dr, new ClassicLayoutManager(), ds);
+
+        // Export to Excel
+        response.setContentType("application/vnd.ms-excel");
+        response.setHeader("Content-Disposition", "attachment; filename=employee_report.xlsx");
+
+        JRXlsExporter exporter = new JRXlsExporter();
+        exporter.setExporterInput(new SimpleExporterInput(jp));
+        exporter.setExporterOutput(new SimpleOutputStreamExporterOutput(response.getOutputStream()));
+        exporter.exportReport();
+    }
+}
+
+    <dependency>
+        <groupId>net.sf.jasperreports</groupId>
+        <artifactId>jasperreports</artifactId>
+        <version>6.21.0</version>
+    </dependency>
+
+    <!-- Dynamic Jasper -->
+    <dependency>
+        <groupId>ar.com.fdvs</groupId>
+        <artifactId>DynamicJasper</artifactId>
+        <version>5.3.5</version>
+    </dependency>
+
+

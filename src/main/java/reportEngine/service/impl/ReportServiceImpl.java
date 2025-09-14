@@ -1,14 +1,34 @@
 package reportEngine.service.impl;
 
+import java.awt.Color;
 import java.io.ByteArrayOutputStream;
 import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.Statement;
 
 import javax.sql.DataSource;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import ar.com.fdvs.dj.core.DynamicJasperHelper;
+import ar.com.fdvs.dj.core.layout.ClassicLayoutManager;
+import ar.com.fdvs.dj.domain.DynamicReport;
+import ar.com.fdvs.dj.domain.Style;
+import ar.com.fdvs.dj.domain.builders.ColumnBuilder;
+import ar.com.fdvs.dj.domain.builders.FastReportBuilder;
+import ar.com.fdvs.dj.domain.builders.StyleBuilder;
+import ar.com.fdvs.dj.domain.constants.Font;
+import ar.com.fdvs.dj.domain.constants.HorizontalAlign;
+import ar.com.fdvs.dj.domain.constants.Page;
+import ar.com.fdvs.dj.domain.constants.Transparency;
+import ar.com.fdvs.dj.domain.constants.VerticalAlign;
+import ar.com.fdvs.dj.domain.entities.columns.AbstractColumn;
 import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRResultSetDataSource;
 import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperExportManager;
 import net.sf.jasperreports.engine.JasperFillManager;
@@ -25,14 +45,15 @@ import net.sf.jasperreports.engine.export.ooxml.JRXlsxExporter;
 import net.sf.jasperreports.engine.type.WhenNoDataTypeEnum;
 import net.sf.jasperreports.export.SimpleExporterInput;
 import net.sf.jasperreports.export.SimpleOutputStreamExporterOutput;
-import reportEngine.service.ReportService;
+import reportEngine.service.ReportService; 
 
 @Service
 public class ReportServiceImpl implements ReportService{
+    Logger log = LoggerFactory.getLogger(ReportServiceImpl.class);
 
 	@Autowired
     private final DataSource dataSource;
-
+	
     public ReportServiceImpl(DataSource dataSource) {
         this.dataSource = dataSource;
     }
@@ -57,7 +78,7 @@ public class ReportServiceImpl implements ReportService{
         fieldName.setValueClass(String.class);
         try {
 			jasperDesign.addField(fieldName);
-		} catch (JRException e) {
+		}	catch (JRException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -67,7 +88,7 @@ public class ReportServiceImpl implements ReportService{
         fieldSalary.setValueClass(Double.class);
         try {
 			jasperDesign.addField(fieldSalary);
-		} catch (JRException e) {
+		}	catch (JRException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -107,7 +128,7 @@ public class ReportServiceImpl implements ReportService{
 		return jasperReport;
 	}
 
-	public byte[] getByteDataForExportForPdfAndExcel(JasperReport jasperReport, String exportType) {
+	public byte[] getByteDataForExportForPdfAndExcel(JasperPrint jasperPrint, JasperReport jasperReport, String exportType) {
 
 		byte[] bytes = null;
 		
@@ -115,22 +136,24 @@ public class ReportServiceImpl implements ReportService{
 	        try (Connection conn = dataSource.getConnection();
 	                ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
-	               	// 4. Fill report with DB data
-	               	JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, null, conn);
+               	// 4. Fill report with DB data
+	        	if	(null == jasperPrint)
+	        		jasperPrint = JasperFillManager.fillReport(jasperReport, null, conn);
 
 	               	// 5. Export to PDF
-	               	JasperExportManager.exportReportToPdfStream(jasperPrint, out);
-	               	bytes = out.toByteArray();
-	           }	catch(Exception e) {
-	           		e.printStackTrace();
-	           }
+	        	JasperExportManager.exportReportToPdfStream(jasperPrint, out);
+	        	bytes = out.toByteArray();
+	        }	catch(Exception e) {
+	           	e.printStackTrace();
+	        }
 		}
 		else if (exportType.equalsIgnoreCase("excel")) {
 	        //JasperReport jasperReport = getJasperReport();
-	        JasperPrint jasperPrint = null;
+
 	        try (Connection conn = dataSource.getConnection();
 	                ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-				jasperPrint = JasperFillManager.fillReport(jasperReport, null, conn);
+	        	if	(null == jasperPrint)
+	        		jasperPrint = JasperFillManager.fillReport(jasperReport, null, conn);
 				
 				JRXlsxExporter exporter = new JRXlsxExporter();
 		        exporter.setExporterInput(new SimpleExporterInput(jasperPrint));
@@ -144,5 +167,75 @@ public class ReportServiceImpl implements ReportService{
 			}
 		}
 		return bytes;
+	}
+	
+	public JasperPrint getByteDataUsingDynamicReport() {
+	    JasperPrint jasperPrint = null;
+	    Statement stmt = null;
+	    ResultSet rs = null;
+	    String sql = "SELECT EMP_ID, EMP_FNAME, EMP_LNAME, COMP_ID, EMP_NO, EMP_EMAIL_OFF FROM KRC_EMPLOYEE_INFO";
+
+	    try (Connection conn = dataSource.getConnection()) {
+	        stmt = conn.createStatement();
+	        rs = stmt.executeQuery(sql);
+
+	        ResultSetMetaData metaData = rs.getMetaData();
+	        int columnCount = metaData.getColumnCount();
+
+	        FastReportBuilder drb = new FastReportBuilder();
+
+	        // Header style with safe font
+	        Style headerStyle = new StyleBuilder(false)
+	                .setFont(new Font(10, "DejaVu Sans", false, false, false))
+	                .setHorizontalAlign(HorizontalAlign.CENTER)
+	                .setBackgroundColor(Color.LIGHT_GRAY)
+	                .setTransparency(Transparency.OPAQUE)
+	                .build();
+	        
+	        Style detailStyle = new StyleBuilder(false)
+	                .setFont(new Font(10, "DejaVu Sans", false))
+	                .setHorizontalAlign(HorizontalAlign.LEFT)
+	                .setVerticalAlign(VerticalAlign.TOP)
+	                .setStretchWithOverflow(true) // ✅ Prevents letter-by-letter split
+	               // .setTextWrap(true)            // ✅ Allows wrapping
+	                .build();
+
+	        // Add columns dynamically
+	        for (int i = 1; i <= columnCount; i++) {
+	            String colLabel = metaData.getColumnLabel(i);
+	            if (colLabel == null || colLabel.isEmpty()) {
+	                colLabel = metaData.getColumnName(i);
+	            }
+	            //drb.addColumn(colLabel, colLabel, String.class.getName(), 50, headerStyle, null);
+
+	            AbstractColumn column = ColumnBuilder.getNew()
+	                    .setColumnProperty(colLabel, String.class.getName())
+	                    .setTitle(colLabel)
+	                    .setWidth(120)               // wider column
+	                    .setHeaderStyle(headerStyle)
+	                    .setStyle(detailStyle)       // apply detail style
+	                    .build();
+
+	            drb.addColumn(column);
+	        }
+
+	        drb.setTitle("Dynamic Report").setUseFullPageWidth(true);
+	        drb.setPrintBackgroundOnOddRows(true);
+	        drb.setUseFullPageWidth(true);
+	        drb.setPageSizeAndOrientation(Page.Page_A4_Landscape()); 
+	        DynamicReport dr = drb.build();
+
+	        JRResultSetDataSource jrDataSource = new JRResultSetDataSource(rs);
+
+	        // ✅ This already fills the report — don’t call JasperFillManager again
+	        jasperPrint = DynamicJasperHelper.generateJasperPrint(dr, new ClassicLayoutManager(), jrDataSource);
+
+	    } catch (Exception e) {
+	        log.error("Error generating report", e);
+	    } finally {
+	        try { if (rs != null) rs.close(); } catch (Exception ignored) {}
+	        try { if (stmt != null) stmt.close(); } catch (Exception ignored) {}
+	    }
+	    return jasperPrint;
 	}
 }

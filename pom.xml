@@ -142,14 +142,7 @@
             <artifactId>commons-io</artifactId>
             <version>2.11.0</version>
         </dependency>
-        
-        <dependency>
-	        <groupId>net.sf.jasperreports</groupId>
-	        <artifactId>jasperreports</artifactId>
-	        <version>6.21.3</version>
-	    </dependency>
-	
-	    <!-- iText for PDF -->
+        <!-- iText for PDF -->
 	    <dependency>
 	        <groupId>com.lowagie</groupId>
 	        <artifactId>itext</artifactId>
@@ -166,6 +159,23 @@
 	        <artifactId>ojdbc8</artifactId>
 	        <version>19.22.0.0</version>
 	    </dependency>
+	    
+	    <dependency>
+	        <groupId>net.sf.jasperreports</groupId>
+	        <artifactId>jasperreports</artifactId>
+	        <version>6.21.3</version>
+	    </dependency>
+	    <dependency>
+	        <groupId>ar.com.fdvs</groupId>
+	        <artifactId>DynamicJasper</artifactId>
+	        <version>5.3.5</version>
+	    </dependency>
+		<dependency>
+		  <groupId>net.sf.jasperreports</groupId>
+		  <artifactId>jasperreports-fonts</artifactId>
+		  <version>6.8.1</version> <!-- match your jasperreports version -->
+		</dependency>
+
     </dependencies>
 	    
 	<build>
